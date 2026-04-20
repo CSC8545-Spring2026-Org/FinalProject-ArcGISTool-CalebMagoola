@@ -23,11 +23,42 @@ class Tool(object):
     def getParameterInfo(self):
         """Define the tool parameters."""
         params = [
+            #Input Feature Layer
             arcpy.Parameter(displayName = "Input Feature Layer",
                             name = "input_feature_layer",
                             datatype = "GPFeatureLayer",
                             parameterType = "Required",
-                            direction = "Input")
+                            direction = "Input"),
+            #Cell Height
+            arcpy.Parameter(displayName = "Input Cell Height",
+                            name = "input_cell_height",
+                            datatype = "GPLong",
+                            parameterType = "Required",
+                            direction = "Input"),
+            #Cell Width
+            arcpy.Parameter(displayName = "Input Cell Width",
+                            name = "input_cell_width",
+                            datatype = "GPLong",
+                            parameterType = "Required",
+                            direction = "Input"),
+            #Smoothing Type
+            arcpy.Parameter(displayName = "Input Smoothing Type",
+                            name = "input_feature_layer",
+                            datatype = "GPString",
+                            parameterType = "Optional",
+                            direction = "Input"),
+            #Passes
+            arcpy.Parameter(displayName = "Input Number of Filter Passes",
+                            name = "input_feature_layer",
+                            datatype = "GPLong",
+                            parameterType = "Optional",
+                            direction = "Input"),
+            #Output Raster
+            arcpy.Parameter(displayName = "Output Raster Layer",
+                            name = "output_raster_layer",
+                            datatype = "GPRasterLayer",
+                            parameterType = "Required",
+                            direction = "Output")
         ]
         return params
 
