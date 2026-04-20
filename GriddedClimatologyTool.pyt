@@ -3,7 +3,7 @@
 import arcpy
 
 
-class Toolbox:
+class Toolbox(object):
     def __init__(self):
         """Define the toolbox (the name of the toolbox is the name of the
         .pyt file)."""
@@ -13,16 +13,22 @@ class Toolbox:
         # List of tool classes associated with this toolbox
         self.tools = [Tool]
 
-
-class Tool:
+class Tool(object):
     def __init__(self):
         """Define the tool (tool name is the name of the class)."""
         self.label = "Tool"
         self.description = ""
+        self.canRunInBackground = False
 
     def getParameterInfo(self):
         """Define the tool parameters."""
-        params = None
+        params = [
+            arcpy.Parameter(displayName = "Input Feature Layer",
+                            name = "input_feature_layer",
+                            datatype = "GPFeatureLayer",
+                            parameterType = "Required",
+                            direction = "Input")
+        ]
         return params
 
     def isLicensed(self):
