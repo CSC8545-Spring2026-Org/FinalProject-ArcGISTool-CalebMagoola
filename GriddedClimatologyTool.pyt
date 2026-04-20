@@ -28,25 +28,29 @@ class Tool(object):
                         parameterType = "Required",
                         direction = "Input")
         
-        cell_height = arcpy.Parameter(displayName = "Input Cell Height",
+        cell_height = arcpy.Parameter(displayName = "Cell Height",
                         name = "input_cell_height",
                         datatype = "GPLong",
                         parameterType = "Required",
                         direction = "Input")
         
-        cell_width = arcpy.Parameter(displayName = "Input Cell Width",
+        cell_width = arcpy.Parameter(displayName = "Cell Width",
                         name = "input_cell_width",
                         datatype = "GPLong",
                         parameterType = "Required",
                         direction = "Input")
         
-        smoothing = arcpy.Parameter(displayName = "Input Smoothing Type",
+        smoothing = arcpy.Parameter(displayName = "Smoothing",
                         name = "input_feature_layer",
                         datatype = "GPString",
                         parameterType = "Optional",
                         direction = "Input")
+
+        smoothing.filter.type = "ValueList"
+        smoothing.filter.list = ["none", "low", "high"]
+        smoothing.value = "none"
         
-        smoothing_passes = arcpy.Parameter(displayName = "Input Number of Filter Passes",
+        smoothing_passes = arcpy.Parameter(displayName = "Filter Passes",
                         name = "input_feature_layer",
                         datatype = "GPLong",
                         parameterType = "Optional",
