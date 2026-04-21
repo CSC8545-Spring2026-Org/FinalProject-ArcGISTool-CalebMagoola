@@ -46,8 +46,8 @@ class Tool(object):
                         direction = "Input")
 
         smoothing.filter.type = "ValueList"
-        smoothing.filter.list = ["none", "low", "high"]
-        smoothing.value = "none"
+        smoothing.filter.list = ["None", "Low", "High"]
+        smoothing.value = "None"
         
         smoothing_passes = arcpy.Parameter(displayName = "Filter Passes",
                         name = "input_feature_layer",
@@ -74,7 +74,7 @@ class Tool(object):
         """Modify the values and properties of parameters before internal
         validation is performed.  This method is called whenever a parameter
         has been changed."""
-        
+
         return
 
     def updateMessages(self, parameters):
