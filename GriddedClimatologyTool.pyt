@@ -15,13 +15,12 @@ class Toolbox(object):
 
 class Tool(object):
     def __init__(self):
-        """Define the tool (tool name is the name of the class)."""
+        #Define the tool (tool name is the name of the class)
         self.label = "Tool"
         self.description = ""
         self.canRunInBackground = False
 
     def getParameterInfo(self):
-        """Define the tool parameters."""
         input_layer = arcpy.Parameter(displayName = "Input Feature Layer",
                         name = "input_feature_layer",
                         datatype = "GPFeatureLayer",
@@ -75,6 +74,7 @@ class Tool(object):
         """Modify the values and properties of parameters before internal
         validation is performed.  This method is called whenever a parameter
         has been changed."""
+        
         return
 
     def updateMessages(self, parameters):
