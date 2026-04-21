@@ -40,7 +40,7 @@ class Tool(object):
                         direction = "Input")
         
         smoothing = arcpy.Parameter(displayName = "Smoothing",
-                        name = "input_feature_layer",
+                        name = "smoothing",
                         datatype = "GPString",
                         parameterType = "Optional",
                         direction = "Input")
@@ -50,7 +50,7 @@ class Tool(object):
         smoothing.value = "None"
         
         smoothing_passes = arcpy.Parameter(displayName = "Filter Passes",
-                        name = "input_feature_layer",
+                        name = "smoothing_passes",
                         datatype = "GPLong",
                         parameterType = "Optional",
                         direction = "Input")
@@ -61,8 +61,6 @@ class Tool(object):
                         parameterType = "Required",
                         direction = "Output")
 
-
-
         params = [input_layer, cell_height, cell_width, smoothing, smoothing_passes, output_layer]
         return params
 
@@ -71,10 +69,14 @@ class Tool(object):
         return True
 
     def updateParameters(self, parameters):
-        """Modify the values and properties of parameters before internal
-        validation is performed.  This method is called whenever a parameter
-        has been changed."""
+        smoothing = parameters[3]
+        smoothing_passes = parameters[4]
 
+        if smoothing.altered:
+            if smoothing.value == "None":
+                smoothing_passes.enabled = False
+            else:
+                smoothing_passes.enabled = True
         return
 
     def updateMessages(self, parameters):
