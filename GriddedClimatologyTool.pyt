@@ -100,13 +100,9 @@ class Tool(object):
         fishnet = self.create_fishnet(config)
         joined = self.spatial_join(config, fishnet)
         raster = self.to_raster(config, joined)
-        
-        climatology = raster
-        if config["smoothing_type"] != "None" and config["smoothing_passes"] > 0:
-            climatology = self.smooth(config, raster)
+        climatology = self.smooth(config, raster)
 
         climatology.save(config["output"])
-
         return climatology
 
     def postExecute(self, parameters):
@@ -128,43 +124,52 @@ Execute Step Helper Methods Below
         }
     
     def create_fishnet(config):
-        cell_size = config["cell_size"]
-        template = config["template_layer"]
-
         return arcpy.management.CreateFishnet(
             out_feature_class="in_memory/fishnet",
             origin_coord="0 0",
             y_axis_coord="0 1",
-            cell_width=cell_size,
-            cell_height=cell_size,
+            cell_width=config["cell_size"],
+            cell_height=config["cell_size"],
             number_rows="0",
             number_columns="0",
             corner_coord="#",
             labels="NO_LABELS",
-            template=template,
+            template=config["template_layer"],
             geometry_type="POLYGON"
         )
     
     def spatial_join(config):
-        input_layer = config["input_layer"]
-
         return arcpy.analysis.SpatialJoin(
             target_features = "in_memory/fishnet",
-            join_features = input_layer,
+            join_features = config["input_layer"],
             out_feature_class = "in_memory/joined",
             match_option = "INTERSECT",
             join_operation="JOIN_ONE_TO_ONE"
         )
 
-    def convert_to_raster():
+    def to_raster(config, joined_fc):
+        return arcpy.conversion.PolygonToRaster(
+            in_features=joined_fc,
+            value_field="Join_Count",
+            out_rasterdataset="in_memory/raster",
+            cell_assignment="MAXIMUM_AREA",
+            priority_field="NONE",
+            cellsize=config["cell_size"]
+        )
 
-    def smooth_climatology(gridded_raster, smooth_type):
-        if smooth_type != "None" and smooth_passes > 0:
-            for i in range(smooth_passes):
-                climatology = smooth_climatology(climatology, smooth_type)
+    def smooth(config, raster):
+        if config["smoothing_type"] == "None" or config["smoothing_passes"] <= 0:
+            return raster
 
         arcpy.CheckOutExtension("Spatial")
-        filter_out = Filter(gridded_raster, smooth_type, "DATA")
-        smooth_raster = filter_out.save()
+        result = raster
+
+        for _ in range(config["smoothing_passes"]):
+            result = arcpy.sa.FocalStatistics(
+                in_raster = result,
+                neighborhood = arcpy.sa.NbrRectangle(3, 3, "CELL"),
+                statistics_type = "MEAN"
+            )
+
         arcpy.CheckInExtension("Spatial")
-        return smooth_raster
+        return result
