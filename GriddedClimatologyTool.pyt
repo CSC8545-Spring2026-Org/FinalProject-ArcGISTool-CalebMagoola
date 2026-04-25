@@ -113,7 +113,7 @@ class Tool(object):
 
         if smooth != "None":
             smooth_raster = climatology
-            for i in range(len(smooth_passes)):
+            for i in range(smooth_passes):
                 smooth_raster = smooth_climatology(smooth_raster, smooth_type)
             climatology = smooth_raster
 
