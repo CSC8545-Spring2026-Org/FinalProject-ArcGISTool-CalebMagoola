@@ -152,7 +152,8 @@ Execute Step Helper Methods Below
             target_features = "in_memory/fishnet",
             join_features = input_layer,
             out_feature_class = "in_memory/joined",
-            match_option = "INTERSECT"
+            match_option = "INTERSECT",
+            join_operation="JOIN_ONE_TO_ONE"
         )
 
     def convert_to_raster():
