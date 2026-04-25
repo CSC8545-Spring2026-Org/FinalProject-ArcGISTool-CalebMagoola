@@ -145,11 +145,13 @@ Execute Step Helper Methods Below
             geometry_type="POLYGON"
         )
     
-    def spatial_join(temp_layer):
-        arcpy.analysis.SpatialJoin(
-            target_features = "memory\\fishnet",
-            join_features = template_layer,
-            out_feature_class = "memory\\joined",
+    def spatial_join(config):
+        input_layer = config["input_layer"]
+
+        return arcpy.analysis.SpatialJoin(
+            target_features = "in_memory/fishnet",
+            join_features = input_layer,
+            out_feature_class = "in_memory/joined",
             match_option = "INTERSECT"
         )
 
