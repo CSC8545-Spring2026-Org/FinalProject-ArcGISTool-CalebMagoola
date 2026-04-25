@@ -2,7 +2,7 @@
 
 import arcpy
 from arcpy import env
-from arcpy.sa import *
+import arcpy.sa
 
 
 class Toolbox(object):
@@ -61,7 +61,7 @@ class Tool(object):
         
         output_layer = arcpy.Parameter(displayName = "Output Raster Layer",
                         name = "output_raster_layer",
-                        datatype = "DERasterDataset"
+                        datatype = "DERasterDataset",
                         parameterType = "Required",
                         direction = "Output")
 
@@ -73,20 +73,20 @@ class Tool(object):
         try:
             if arcpy.CheckExtension("Spatial") == "Available":
                 return True
-
         except:
             return False
-        return False
 
     def updateParameters(self, parameters):
-        smoothing = parameters[3]
-        smoothing_passes = parameters[4]
+        smoothing = parameters[2]
+        smoothing_passes = parameters[3]
 
         if smoothing.altered:
             if smoothing.value == "None":
                 smoothing_passes.enabled = False
+                smoothing_passes.value = 0
             else:
                 smoothing_passes.enabled = True
+
         return
 
     def updateMessages(self, parameters):
@@ -110,9 +110,6 @@ class Tool(object):
         added to the display."""
         return
 
-"""
-Execute Step Helper Methods Below
-"""
     def _build_config(self, parameters):
         return {
             "input_layer": parameters[0].valueAsText,
@@ -123,7 +120,7 @@ Execute Step Helper Methods Below
             "output_layer": parameters[5].valueAsText
         }
     
-    def create_fishnet(config):
+    def create_fishnet(self, config):
         return arcpy.management.CreateFishnet(
             out_feature_class="in_memory/fishnet",
             origin_coord="0 0",
@@ -138,7 +135,7 @@ Execute Step Helper Methods Below
             geometry_type="POLYGON"
         )
     
-    def spatial_join(config):
+    def spatial_join(self, config):
         return arcpy.analysis.SpatialJoin(
             target_features = "in_memory/fishnet",
             join_features = config["input_layer"],
@@ -147,7 +144,7 @@ Execute Step Helper Methods Below
             join_operation="JOIN_ONE_TO_ONE"
         )
 
-    def to_raster(config, joined_fc):
+    def to_raster(self, config, joined_fc):
         return arcpy.conversion.PolygonToRaster(
             in_features=joined_fc,
             value_field="Join_Count",
@@ -157,7 +154,7 @@ Execute Step Helper Methods Below
             cellsize=config["cell_size"]
         )
 
-    def smooth(config, raster):
+    def smooth(self, config, raster):
         if config["smoothing_type"] == "None" or config["smoothing_passes"] <= 0:
             return raster
 
