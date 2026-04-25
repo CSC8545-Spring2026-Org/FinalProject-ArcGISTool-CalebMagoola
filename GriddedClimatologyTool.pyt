@@ -35,7 +35,7 @@ class Tool(object):
                         parameterType = "Required",
                         direction = "Input")
         
-        smoothing = arcpy.Parameter(displayName = "Smoothing",
+        smoothing = arcpy.Parameter(displayName = "Raster Smoothing",
                         name = "smoothing",
                         datatype = "GPString",
                         parameterType = "Optional",
@@ -45,7 +45,7 @@ class Tool(object):
         smoothing.filter.list = ["None", "Low", "High"]
         smoothing.value = "None"
         
-        smoothing_passes = arcpy.Parameter(displayName = "Filter Passes",
+        smoothing_passes = arcpy.Parameter(displayName = "Smoothing Passes",
                         name = "smoothing_passes",
                         datatype = "GPLong",
                         parameterType = "Optional",
@@ -90,8 +90,40 @@ class Tool(object):
         return
 
     def updateMessages(self, parameters):
-        """Modify the messages created by internal validation for each tool
-        parameter. This method is called after internal validation."""
+        input_layer = parameters[0]
+        cell_size = parameters[1]
+        smoothing = parameters[2]
+        smoothing_passes = parameters[3]
+        template_layer = parameters[4]
+        output_layer = parameters[5]
+
+        if not input_layer.value:
+            input_layer.setErrorMessage("Input Feature Layer is required.")
+
+        if not cell_size.value:
+            cell_size.setErrorMessage("Cell Size is required.")
+        else:
+            try:
+                if float(cell_size.value) <= 0:
+                    cell_size.setErrorMessage("Cell Size must be greater than 0.")
+            except:
+                cell_size.setErrorMessage("Cell Size must be numeric.")
+
+        if template_layer.value:
+            try:
+                _ = template_layer.value.extent
+            except AttributeError:
+                template_layer.setErrorMessage("Template Layer must be a valid spatial dataset.")
+
+        if smoothing.value == "None":
+            smoothing_passes.setWarningMessage("Ignored since smoothing is currently disabled")
+        else:
+            if smoothing_passes.value is None or smoothing_passes.value < 1:
+                smoothing_passes.setErrorMessage("Smoothing Passes must be 1+ when Smoothing is enabled.")
+
+        if not output_layer.value:
+            output_layer.setErrorMessage("Output Raster Layer is required.")
+
         return
 
     def execute(self, parameters, messages):
