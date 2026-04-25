@@ -99,27 +99,51 @@ class Tool(object):
         return
 
     def execute(self, parameters, messages):
-        #TO-DO: Take inputs and create Fishnet
         cell_width = parameters[1].valueAsText
         cell_height = parameters[2].valueAsText
+        smooth_type = parameters[3].valueAsText
+        smooth_passes = parameters[4].valueAsText
         template_layer = parameters[5].valueAsText
         output_location = parameters[6].valueAsText
+        climatology = None
 
+        create_fishnet(cell_width, cell_height_template_layer)
+        spatial_join(template_layer)
+        climatology = convert_to_raster(spatial_join)
+
+        if smooth != "None":
+            smooth_raster = climatology
+            for i in range(len(smooth_passes)):
+                smooth_raster = smooth_climatology(smooth_raster, smooth_type)
+            climatology = smooth_raster
+
+        return climatology
+
+    def postExecute(self, parameters):
+        """This method takes place after outputs are processed and
+        added to the display."""
+        return
+
+"""
+Execute Step Helper Methods Below
+"""
+
+    def create_fishnet(c_width, c_height, temp_layer):
         arcpy.management.CreateFishnet(
             out_feature_class = "memory\\fishnet",
             origin_coord = "0 1",
             y_axis_coord = "0 1",
-            cell_width = cell_width,
-            cell_height = cell_height,
+            cell_width = c_width,
+            cell_height = c_height,
             number_rows = "0",
             number_columns = "0",
             corner_coord = "#",
             labels = "NO_LABELS",
-            template = template_layer, #overrides origin_coord, y_axis_coord, and auto calculates number_rows, number_columns
+            template = temp_layer, #overrides origin_coord, y_axis_coord, and auto calculates number_rows, number_columns
             geometry_type = "POLYGON"
         )
-
-        #TO-DO: Create Spatial Join with Fishnet Output and Spatial Input
+    
+    def spatial_join(temp_layer):
         arcpy.analysis.SpatialJoin(
             target_features = "memory\\fishnet",
             join_features = template_layer,
@@ -127,38 +151,11 @@ class Tool(object):
             match_option = "INTERSECT"
         )
 
-        #TO-DO: Smooth Pass Loop
-        # smoothing = parameters[3]
-        # smoothing_passes = parameters[4]
+    def convert_to_raster():
 
-        # smooth_raster = None
-
-        # if smoothing.value != "None":
-        #     if smoothing.value == "Low":
-        #         for i in range(len(smoothing_passes.value)):
-        #             arcpy.CheckOutExtension("Spatial")
-
-        #             filter_out = Filter(smooth_raster, "LOW", "DATA")
-        #             smooth_raster = filter_out.save()
-
-        #             arcpy.CheckInExtension("Spatial")
-        #     else:
-        #         for i in range(len(smoothing_passes.value)):
-        #             arcpy.CheckOutExtension("Spatial")
-
-        #             filter_out = Filter(smooth_raster, "HIGH", "DATA")
-        #             smooth_raster = filter_out.save()
-
-        #             arcpy.CheckInExtension("Spatial")
-        #     result = smooth_raster
-        # else:
-        #     result = None
-
-        #Return Final Product
-        result = None
-        return result
-
-    def postExecute(self, parameters):
-        """This method takes place after outputs are processed and
-        added to the display."""
-        return
+    def smooth_climatology(gridded_raster, smooth_type):
+        arcpy.CheckOutExtension("Spatial")
+        filter_out = Filter(gridded_raster, smooth_type, "DATA")
+        smooth_raster = filter_out.save()
+        arcpy.CheckInExtension("Spatial")
+        return smooth_raster
