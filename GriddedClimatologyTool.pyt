@@ -29,15 +29,9 @@ class Tool(object):
                         parameterType = "Required",
                         direction = "Input")
         
-        cell_width = arcpy.Parameter(displayName = "Cell Width",
-                        name = "input_cell_width",
-                        datatype = "GPLong",
-                        parameterType = "Required",
-                        direction = "Input")
-        
-        cell_height = arcpy.Parameter(displayName = "Cell Height",
-                        name = "input_cell_height",
-                        datatype = "GPLong",
+        cell_size = arcpy.Parameter(displayName = "Cell Size",
+                        name = "cell_size",
+                        datatype = "GPDouble",
                         parameterType = "Required",
                         direction = "Input")
         
@@ -57,19 +51,21 @@ class Tool(object):
                         parameterType = "Optional",
                         direction = "Input")
 
-        template_layer = arcpy.Parameter(displayName = "Template Layer",
+        smoothing_passes.value = 1
+
+        template_layer = arcpy.Parameter(displayName = "Template Layer (for Extent & Cell Alignment)",
                         name = "template_layer",
                         datatype = "GPRasterLayer",
                         parameterType = "Required",
-                        direction = "Output")
+                        direction = "Input")
         
         output_layer = arcpy.Parameter(displayName = "Output Raster Layer",
                         name = "output_raster_layer",
-                        datatype = "GPRasterLayer",
+                        datatype = "DERasterDataset"
                         parameterType = "Required",
                         direction = "Output")
 
-        params = [input_layer, cell_width, cell_height, smoothing, smoothing_passes, template_layer, output_layer]
+        params = [input_layer, cell_size, smoothing, smoothing_passes, template_layer, output_layer]
         return params
 
     def isLicensed(self):
@@ -99,23 +95,17 @@ class Tool(object):
         return
 
     def execute(self, parameters, messages):
-        cell_width = parameters[1].valueAsText
-        cell_height = parameters[2].valueAsText
-        smooth_type = parameters[3].valueAsText
-        smooth_passes = parameters[4].valueAsText
-        template_layer = parameters[5].valueAsText
-        output_location = parameters[6].valueAsText
-        climatology = None
+        config = self._build_config(parameters)
 
-        create_fishnet(cell_width, cell_height_template_layer)
-        spatial_join(template_layer)
-        climatology = convert_to_raster(spatial_join)
+        fishnet = self.create_fishnet(config)
+        joined = self.spatial_join(config, fishnet)
+        raster = self.to_raster(config, joined)
+        
+        climatology = raster
+        if config["smoothing_type"] != "None" and config["smoothing_passes"] > 0:
+            climatology = self.smooth(config, raster)
 
-        if smooth != "None":
-            smooth_raster = climatology
-            for i in range(smooth_passes):
-                smooth_raster = smooth_climatology(smooth_raster, smooth_type)
-            climatology = smooth_raster
+        climatology.save(config["output"])
 
         return climatology
 
@@ -127,20 +117,32 @@ class Tool(object):
 """
 Execute Step Helper Methods Below
 """
+    def _build_config(self, parameters):
+        return {
+            "input_layer": parameters[0].valueAsText,
+            "cell_size": float(parameters[1].value),
+            "smoothing_type": parameters[2].valueAsText,
+            "smoothing_passes": int(parameters[3].value) if parameters[3].value else 0,
+            "template_layer": parameters[4].value,
+            "output_layer": parameters[5].valueAsText
+        }
+    
+    def create_fishnet(config):
+        cell_size = config["cell_size"]
+        template = config["template_layer"]
 
-    def create_fishnet(c_width, c_height, temp_layer):
-        arcpy.management.CreateFishnet(
-            out_feature_class = "memory\\fishnet",
-            origin_coord = "0 1",
-            y_axis_coord = "0 1",
-            cell_width = c_width,
-            cell_height = c_height,
-            number_rows = "0",
-            number_columns = "0",
-            corner_coord = "#",
-            labels = "NO_LABELS",
-            template = temp_layer, #overrides origin_coord, y_axis_coord, and auto calculates number_rows, number_columns
-            geometry_type = "POLYGON"
+        return arcpy.management.CreateFishnet(
+            out_feature_class="in_memory/fishnet",
+            origin_coord="0 0",
+            y_axis_coord="0 1",
+            cell_width=cell_size,
+            cell_height=cell_size,
+            number_rows="0",
+            number_columns="0",
+            corner_coord="#",
+            labels="NO_LABELS",
+            template=template,
+            geometry_type="POLYGON"
         )
     
     def spatial_join(temp_layer):
@@ -154,6 +156,10 @@ Execute Step Helper Methods Below
     def convert_to_raster():
 
     def smooth_climatology(gridded_raster, smooth_type):
+        if smooth_type != "None" and smooth_passes > 0:
+            for i in range(smooth_passes):
+                climatology = smooth_climatology(climatology, smooth_type)
+
         arcpy.CheckOutExtension("Spatial")
         filter_out = Filter(gridded_raster, smooth_type, "DATA")
         smooth_raster = filter_out.save()
