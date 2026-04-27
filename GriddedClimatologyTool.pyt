@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import arcpy
 from arcpy import env
 import arcpy.sa
@@ -7,19 +6,14 @@ import arcpy.sa
 
 class Toolbox(object):
     def __init__(self):
-        """Define the toolbox (the name of the toolbox is the name of the
-        .pyt file)."""
         self.label = "Toolbox"
         self.alias = "toolbox"
-
-        # List of tool classes associated with this toolbox
         self.tools = [Tool]
 
 class Tool(object):
     def __init__(self):
-        #Define the tool (tool name is the name of the class)
-        self.label = "Tool"
-        self.description = ""
+        self.label = "Gridded Climatology Tool"
+        self.description = "Forms a gridded climatology in one workflow using fishnet, spatial_join, polygon to raster, and focal statistics"
         self.canRunInBackground = False
 
     def getParameterInfo(self):
@@ -55,7 +49,7 @@ class Tool(object):
 
         template_layer = arcpy.Parameter(displayName = "Template Layer (for Extent & Cell Alignment)",
                         name = "template_layer",
-                        datatype = "GPRasterLayer",
+                        datatype = "GPFeatureLayer",
                         parameterType = "Required",
                         direction = "Input")
         
@@ -111,7 +105,11 @@ class Tool(object):
 
         if template_layer.value:
             try:
-                _ = template_layer.value.extent
+                desc = arcpy.Describe(template_layer.value)
+
+                if hasattr(desc, "shapeType"):
+                    if desc.shapeType.lower() != "polygon":
+                        template_layer.setErrorMessage("Template Layer must be a polygon feature.")
             except AttributeError:
                 template_layer.setErrorMessage("Template Layer must be a valid spatial dataset.")
 
@@ -133,9 +131,7 @@ class Tool(object):
         joined = self.spatial_join(config, fishnet)
         raster = self.to_raster(config, joined)
         climatology = self.smooth(config, raster)
-
-        climatology.save(config["output"])
-        return climatology
+        return raster
 
     def postExecute(self, parameters):
         """This method takes place after outputs are processed and
@@ -167,9 +163,9 @@ class Tool(object):
             geometry_type="POLYGON"
         )
     
-    def spatial_join(self, config):
+    def spatial_join(self, config, fishnet):
         return arcpy.analysis.SpatialJoin(
-            target_features = "in_memory/fishnet",
+            target_features = fishnet,
             join_features = config["input_layer"],
             out_feature_class = "in_memory/joined",
             match_option = "INTERSECT",
