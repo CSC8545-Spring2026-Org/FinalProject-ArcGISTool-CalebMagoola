@@ -126,12 +126,22 @@ class Tool(object):
 
     def execute(self, parameters, messages):
         config = self._build_config(parameters)
+        scratch = arcpy.env.scratchGDB
+        config["scratch"] = scratch
+
+        fishnet_fc = os.path.join(scratch, "fishnet")
+        joined_fc = os.path.join(scratch, "joined")
+        raster_fc = os.path.join(scratch, "raster")
+        smooth_fc = os.path.join(scratch, "smoothed")
 
         fishnet = self.create_fishnet(config)
-        joined = self.spatial_join(config, fishnet)
-        raster = self.to_raster(config, joined)
-        climatology = self.smooth(config, raster)
-        return raster
+        joined = self.spatial_join(config, fishnet, fishnet_fc)
+        raster = self.to_raster(config, joined, joined_fc)
+        climatology = self.smooth(config, raster, raster_fc)
+        
+        output_fc = parameters[5].valueAsText
+        arcpy.management.CopyRaster(climatology, output_fc)
+        parameters[5].value = output_fc
 
     def postExecute(self, parameters):
         """This method takes place after outputs are processed and
@@ -146,43 +156,44 @@ class Tool(object):
             "smoothing_passes": int(parameters[3].value) if parameters[3].value else 0,
             "template_layer": parameters[4].value,
             "output_layer": parameters[5].valueAsText
+            "scratch": 
         }
     
-    def create_fishnet(self, config):
+    def create_fishnet(self, config, out_fc):
         return arcpy.management.CreateFishnet(
-            out_feature_class="in_memory/fishnet",
-            origin_coord="0 0",
-            y_axis_coord="0 1",
-            cell_width=config["cell_size"],
-            cell_height=config["cell_size"],
-            number_rows="0",
-            number_columns="0",
-            corner_coord="#",
-            labels="NO_LABELS",
-            template=config["template_layer"],
-            geometry_type="POLYGON"
+            out_feature_class = out_fc,
+            origin_coord = "0 0",
+            y_axis_coord = "0 1",
+            cell_width = config["cell_size"],
+            cell_height = config["cell_size"],
+            number_rows = "0",
+            number_columns = "0",
+            corner_coord = "#",
+            labels = "NO_LABELS",
+            template = config["template_layer"],
+            geometry_type = "POLYGON"
         )
     
-    def spatial_join(self, config, fishnet):
+    def spatial_join(self, config, fishnet, out_fc):
         return arcpy.analysis.SpatialJoin(
             target_features = fishnet,
             join_features = config["input_layer"],
-            out_feature_class = "in_memory/joined",
+            out_feature_class = out_fc,
             match_option = "INTERSECT",
             join_operation="JOIN_ONE_TO_ONE"
         )
 
-    def to_raster(self, config, joined_fc):
+    def to_raster(self, config, joined_fc, out_fc):
         return arcpy.conversion.PolygonToRaster(
-            in_features=joined_fc,
-            value_field="Join_Count",
-            out_rasterdataset="in_memory/raster",
-            cell_assignment="MAXIMUM_AREA",
-            priority_field="NONE",
-            cellsize=config["cell_size"]
+            in_features = joined_fc,
+            value_field = "Join_Count",
+            out_rasterdataset = out_fc,
+            cell_assignment = "MAXIMUM_AREA",
+            priority_field = "NONE",
+            cellsize = config["cell_size"]
         )
 
-    def smooth(self, config, raster):
+    def smooth(self, config, raster, out_fc):
         if config["smoothing_type"] == "None" or config["smoothing_passes"] <= 0:
             return raster
 
