@@ -208,15 +208,22 @@ class Tool(object):
 
     def smooth(self, config, raster, out_fc):
         arcpy.CheckOutExtension("Spatial")
-        result = raster
+        working_raster = raster
 
         for _ in range(config["smoothing_passes"]):
-            result = arcpy.sa.FocalStatistics(
-                in_raster = result,
+            low_pass = arcpy.sa.FocalStatistics(
+                in_raster = working_raster,
                 neighborhood = arcpy.sa.NbrRectangle(3, 3, "CELL"),
                 statistics_type = "MEAN"
             )
 
+            if config["smoothing_type"] == "Low":
+                working_raster = low_pass
+            elif config["smoothing_type"] == "High":
+                working_raster = arcpy.sa.Minus(working_raster, low_pass)
+            else:
+                raise ValueError("Invalid Smoothing Type")
+
         arcpy.CheckInExtension("Spatial")
-        arcpy.management.CopyRaster(result, out_fc)
+        arcpy.management.CopyRaster(working_raster, out_fc)
         return out_fc
