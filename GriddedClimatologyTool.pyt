@@ -142,7 +142,7 @@ class Tool(object):
         if config["smoothing_type"] == "None" or config["smoothing_passes"] <= 0:
             result = raster
         else:
-            result = self.smooth(config, raster, raster_fc)
+            result = self.smooth(config, raster, smooth_fc)
         
         output_fc = parameters[5].valueAsText
         arcpy.management.CopyRaster(result, output_fc)
@@ -161,7 +161,6 @@ class Tool(object):
             "smoothing_passes": int(parameters[3].value) if parameters[3].value else 0,
             "template_layer": parameters[4].value,
             "output_layer": parameters[5].valueAsText
-            "scratch": None
         }
     
     def create_fishnet(self, config, out_fc):
