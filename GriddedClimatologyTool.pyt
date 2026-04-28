@@ -2,6 +2,7 @@
 import arcpy
 from arcpy import env
 import arcpy.sa
+import os
 
 
 class Toolbox(object):
@@ -134,9 +135,9 @@ class Tool(object):
         raster_fc = os.path.join(scratch, "raster")
         smooth_fc = os.path.join(scratch, "smoothed")
 
-        fishnet = self.create_fishnet(config)
-        joined = self.spatial_join(config, fishnet, fishnet_fc)
-        raster = self.to_raster(config, joined, joined_fc)
+        fishnet = self.create_fishnet(config, fishnet_fc)
+        joined = self.spatial_join(config, fishnet, joined_fc)
+        raster = self.to_raster(config, joined, raster_fc)
 
         if config["smoothing_type"] == "None" or config["smoothing_passes"] <= 0:
             result = raster
@@ -160,7 +161,7 @@ class Tool(object):
             "smoothing_passes": int(parameters[3].value) if parameters[3].value else 0,
             "template_layer": parameters[4].value,
             "output_layer": parameters[5].valueAsText
-            "scratch": 
+            "scratch": None
         }
     
     def create_fishnet(self, config, out_fc):
@@ -215,4 +216,5 @@ class Tool(object):
             )
 
         arcpy.CheckInExtension("Spatial")
-        return result
+        arcpy.management.CopyRaster(result, out_fc)
+        return out_fc
