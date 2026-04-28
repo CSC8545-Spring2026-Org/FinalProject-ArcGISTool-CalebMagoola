@@ -137,10 +137,14 @@ class Tool(object):
         fishnet = self.create_fishnet(config)
         joined = self.spatial_join(config, fishnet, fishnet_fc)
         raster = self.to_raster(config, joined, joined_fc)
-        climatology = self.smooth(config, raster, raster_fc)
+
+        if config["smoothing_type"] == "None" or config["smoothing_passes"] <= 0:
+            result = raster
+        else:
+            result = self.smooth(config, raster, raster_fc)
         
         output_fc = parameters[5].valueAsText
-        arcpy.management.CopyRaster(climatology, output_fc)
+        arcpy.management.CopyRaster(result, output_fc)
         parameters[5].value = output_fc
 
     def postExecute(self, parameters):
@@ -160,7 +164,7 @@ class Tool(object):
         }
     
     def create_fishnet(self, config, out_fc):
-        return arcpy.management.CreateFishnet(
+        arcpy.management.CreateFishnet(
             out_feature_class = out_fc,
             origin_coord = "0 0",
             y_axis_coord = "0 1",
@@ -173,9 +177,11 @@ class Tool(object):
             template = config["template_layer"],
             geometry_type = "POLYGON"
         )
+
+        return out_fc
     
     def spatial_join(self, config, fishnet, out_fc):
-        return arcpy.analysis.SpatialJoin(
+        arcpy.analysis.SpatialJoin(
             target_features = fishnet,
             join_features = config["input_layer"],
             out_feature_class = out_fc,
@@ -183,8 +189,10 @@ class Tool(object):
             join_operation="JOIN_ONE_TO_ONE"
         )
 
+        return out_fc
+
     def to_raster(self, config, joined_fc, out_fc):
-        return arcpy.conversion.PolygonToRaster(
+        arcpy.conversion.PolygonToRaster(
             in_features = joined_fc,
             value_field = "Join_Count",
             out_rasterdataset = out_fc,
@@ -193,10 +201,9 @@ class Tool(object):
             cellsize = config["cell_size"]
         )
 
-    def smooth(self, config, raster, out_fc):
-        if config["smoothing_type"] == "None" or config["smoothing_passes"] <= 0:
-            return raster
+        return out_fc
 
+    def smooth(self, config, raster, out_fc):
         arcpy.CheckOutExtension("Spatial")
         result = raster
 
