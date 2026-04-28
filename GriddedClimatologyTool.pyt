@@ -164,15 +164,18 @@ class Tool(object):
         }
     
     def create_fishnet(self, config, out_fc):
+        desc = arcpy.Describe(config["template_layer"])
+        ext = desc.extent
+        
         arcpy.management.CreateFishnet(
             out_feature_class = out_fc,
-            origin_coord = "0 0",
-            y_axis_coord = "0 1",
+            origin_coord = f"{ext.XMin} {ext.YMin}",
+            y_axis_coord = f"{ext.XMin} {ext.YMin + 1}",
             cell_width = config["cell_size"],
             cell_height = config["cell_size"],
             number_rows = "0",
             number_columns = "0",
-            corner_coord = "#",
+            corner_coord = f"{ext.XMax} {ext.YMax}",
             labels = "NO_LABELS",
             template = config["template_layer"],
             geometry_type = "POLYGON"
